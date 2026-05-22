@@ -175,11 +175,11 @@ def _parse_robustness_level(level_str: str) -> str:
 
 
 def embed_interface(
-    cover_image: Optional[np.ndarray],
+    cover_image,
     message: str,
     password: str,
     robustness_level: str
-) -> Tuple[Optional[str], str, str, str]:
+):
     """Gradio interface function for embedding."""
     try:
         valid, error = _validate_image(cover_image)
@@ -242,7 +242,7 @@ def embed_interface(
         raise gr.Error(f"An unexpected error occurred: {str(e)}")
 
 
-def extract_interface(stego_file: str, password: str, cover_image: Optional[np.ndarray] = None) -> str:
+def extract_interface(stego_file: str, password: str, cover_image=None):
     """Gradio interface function for extraction."""
     try:
         if not stego_file:
