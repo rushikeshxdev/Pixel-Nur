@@ -301,7 +301,7 @@ def extract_interface(stego_file: str, password: str, cover_image: Optional[np.n
 def create_gradio_app() -> gr.Blocks:
     """Create and configure the Gradio interface."""
     
-    with gr.Blocks(title="PixelNur - Advanced Steganography") as app:
+    with gr.Blocks(title="PixelNur - Advanced Steganography", css=CUSTOM_CSS) as app:
         
         gr.Markdown("""
         <div style="text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 3rem 2rem; border-radius: 1rem; margin-bottom: 2rem; box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);">
@@ -561,4 +561,4 @@ def create_gradio_app() -> gr.Blocks:
 
 if __name__ == "__main__":
     app = create_gradio_app()
-    app.launch(server_name="0.0.0.0", server_port=7860, css=CUSTOM_CSS)
+    app.launch(server_name="0.0.0.0", server_port=7860)
