@@ -33,6 +33,10 @@ from typing import Tuple
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+# Save original modules to avoid poisoning other tests
+modules_to_mock = ['torch', 'cv2', 'gradio', 'src.pixelnur', 'src.extraction_engine', 'src.lwt_transform', 'src.encryption_service']
+original_modules = {name: sys.modules[name] for name in modules_to_mock if name in sys.modules}
+
 # Mock PyTorch and dependent modules before importing
 sys.modules['torch'] = MagicMock()
 sys.modules['cv2'] = MagicMock()
@@ -59,7 +63,15 @@ sys.modules['src.encryption_service'] = mock_encryption_service
 pixelnur_app_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'pixelnur'))
 sys.path.insert(0, pixelnur_app_path)
 
-import app as pixelnur_app
+try:
+    import app as pixelnur_app
+finally:
+    # Restore original modules to avoid poisoning the global namespace
+    for name in modules_to_mock:
+        if name in original_modules:
+            sys.modules[name] = original_modules[name]
+        elif name in sys.modules:
+            del sys.modules[name]
 
 
 class TestUTF8DecodeBugCondition:

@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PixelNur - Advanced CNN-Based Steganography System - Complete Technical Presentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .slide {
+            background: white;
+            border-radius: 20px;
+            padding: 60px;
+            margin: 40px 0;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.6s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 2.5rem;
+            color: #667eea;
+            margin-bottom: 30px;
+            border-bottom: 4px solid #667eea;
+            padding-bottom: 15px;
+        }
+
+        h3 {
+            font-size: 1.8rem;
+            color: #764ba2;
+            margin: 30px 0 15px 0;
+        }
+
+        h4 {
+            font-size: 1.4rem;
+            color: #555;
+            margin: 20px 0 10px 0;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 80px 20px;
+        }
+
+        .hero h1 {
+            font-size: 4.5rem;
+            margin-bottom: 20px;
+        }
+
+        .hero .subtitle {
+            font-size: 1.8rem;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .hero .badges {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
+
+        .badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 12px 30px;
+            border-radius: 30px;
+            color: white;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .tech-stack {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+
+        .tech-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .tech-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .tech-card h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 25px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .code-block .comment {
+            color: #68d391;
+        }
+
+        .code-block .keyword {
+            color: #f687b3;
+        }
+
+        .code-block .string {
+            color: #fbd38d;
+        }
+
+        .flow-diagram {
+            background: #f7fafc;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px 0;
+            text-align: center;
+        }
+
+        .flow-step {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            margin: 10px;
+            font-weight: 600;
+        }
+
+        .arrow {
+            display: inline-block;
+            font-size: 2rem;
+            color: #667eea;
+            margin: 0 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        tr:hover {
+            background: #f7fafc;
+        }
+
+        .highlight {
+            background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px 0;
+        }
+
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+
+        .team-member {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .team-member h4 {
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .team-member p {
+            color: #4a5568;
+            font-weight: 600;
+        }
+
+        .file-reference {
+            background: #edf2f7;
+            padding: 15px;
+            border-left: 4px solid #667eea;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+
+        .file-reference code {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        ul, ol {
+            margin: 20px 0 20px 40px;
+        }
+
+        li {
+            margin: 10px 0;
+        }
+
+        .metric-box {
+            display: inline-block;
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            padding: 20px 40px;
+            border-radius: 15px;
+            margin: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-box h3 {
+            color: white;
+            margin: 0;
+        }
+
+        .metric-box p {
+            color: white;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .architecture-diagram {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            margin: 30px 0;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .layer {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .sub-layer {
+            background: #f7fafc;
+            color: #2d3748;
+            padding: 15px;
+            margin: 10px 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .warning-box {
+            background: #fff5f5;
+            border-left: 4px solid #fc8181;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .success-box {
+            background: #f0fff4;
+            border-left: 4px solid #68d391;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .info-box {
+            background: #ebf8ff;
+            border-left: 4px solid #4299e1;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Title Slide -->
+        <div class="hero">
+            <h1>🔒 PixelNur</h1>
+            <p class="subtitle">Advanced CNN-Based Steganography System</p>
+            <p class="subtitle" style="font-size: 1.2rem;">Complete Technical Presentation</p>
+            <div class="badges">
+                <span class="badge">🧠 CNN-Based</span>
+                <span class="badge">🔐 AES-256</span>
+                <span class="badge">🛡️ Attack Resistant</span>
+                <span class="badge">⚡ GPU Accelerated</span>
+                <span class="badge">🎯 PSNR >40 dB</span>
+            </div>
+        </div>
+
+        <!-- Project Overview -->
+        <div class="slide">
+            <h2>📋 Project Overview</h2>
+            
+            <h3>What is PixelNur?</h3>
+            <p>PixelNur is an advanced steganography system that hides secret messages inside images using CNN-based adaptive embedding. The system combines deep learning, wavelet transforms, and cryptography to achieve imperceptible message hiding with high security.</p>
+            
+            <h3>Project Name Origin</h3>
+            <p><strong>"PixelNur"</strong> combines:</p>
+            <ul>
+                <li><strong>Pixel</strong> - The fundamental unit of digital images</li>
+                <li><strong>Nur</strong> - Arabic word meaning "light" or "hidden light", symbolizing hidden information</li>
+            </ul>
+
+            <h3>Core Idea & Innovation</h3>
+            <p>Traditional steganography uses simple LSB (Least Significant Bit) replacement, which is easily detectable. PixelNur innovates by:</p>
+            <ul>
+                <li>Using a <strong>CNN (Convolutional Neural Network)</strong> to analyze image texture and identify optimal hiding locations</li>
+                <li>Embedding in the <strong>frequency domain</strong> using Lifting Wavelet Transform (LWT)</li>
+                <li>Applying <strong>adaptive embedding strength</strong> based on local image variance</li>
+                <li>Providing <strong>attack resistance</strong> through Reed-Solomon error correction coding</li>
+                <li>Implementing <strong>Sobel gradient fallback</strong> when CNN generates invalid masks</li>
+            </ul>
+
+            <div class="highlight">
+                <h3>🎯 Key Innovation</h3>
+                <p>Unlike traditional methods that embed uniformly across the image, PixelNur uses AI to intelligently select embedding locations based on texture complexity, achieving PSNR >40 dB (visually identical to original) while maintaining high capacity and attack resistance.</p>
+            </div>
+
+            <h3>Live Demo</h3>
+            <p>🚀 Try it now: <a href="https://huggingface.co/spaces/imrushikesh09/pixelnur" target="_blank" style="color: #667eea; font-weight: 600;">https://huggingface.co/spaces/imrushikesh09/pixelnur</a></p>
+        </div>
+
+        <!-- Technologies Used -->
+        <div class="slide">
+            <h2>🛠️ Technologies Used</h2>
+            
+            <div class="tech-stack">
+                <div class="tech-card">
+                    <h4>🧠 Deep Learning</h4>
+                    <p><strong>PyTorch 2.0+</strong></p>
+                    <p>CNN-based texture analysis using ResNet-18 backbone with custom head for mask generation</p>
+                    <div class="file-reference">
+                        <code>src/cnn_module.py</code><br>
+                        Lines 105-157: Model building<br>
+                        Lines 257-318: Mask generation
+                    </div>
+                </div>
+
+                <div class="tech-card">
+                    <h4>🖼️ Image Processing</h4>
+                    <p><strong>OpenCV 4.8+</strong></p>
+                    <p>Image I/O, color space conversion (RGB↔YCbCr), Sobel gradient calculation for fallback masks</p>
+                    <div class="file-reference">
+                        <code>src/cnn_module.py</code><br>
+                        Lines 188-256: Preprocessing/postprocessing<br>
+                        Lines 280-320: Sobel fallback
+                    </div>
+                </div>
+
+                <div class="tech-card">
+                    <h4>🌊 Wavelet Transform</h4>
+                    <p><strong>Custom LWT Implementation</strong></p>
+                    <p>2-level Lifting Wavelet Transform using Haar wavelet for frequency domain embedding</p>
+                    <div class="file-reference">
+                        <code>src/lwt_transform.py</code><br>
+                        Lines 120-180: 1D Haar wavelet<br>
+                        Lines 200-350: 2D transform<br>
+                        Lines 300-450: Forward/inverse LWT
+                    </div>
+                </div>
+
+                <div class="tech-card">
+                    <h4>🔐 Cryptography</h4>
+                    <p><strong>SHA-256 + XOR Cipher</strong></p>
+                    <p>Slice encryption with PBKDF2 key derivation (100,000 iterations)</p>
+                    <div class="file-reference">
+                        <code>src/encryption_service.py</code><br>
+                        Lines 50-100: Encryption/decryption<br>
+                        Lines 30-48: Key validation
+                    </div>
+                </div>
+
+                <div class="tech-card">
+                    <h4>🛡️ Error Correction</h4>
+                    <p><strong>Reed-Solomon ECC</strong></p>
+                    <p>Configurable robustness levels (none/low/medium/high) for attack resistance</p>
+                    <div class="file-reference">
+                        <code>src/robustness_layer.py</code><br>
+                        ECC encoding/decoding<br>
+                        Message replication
+                    </div>
+                </div>
+
+                <div class="tech-card">
+                    <h4>📊 Adaptive Embedding</h4>
+                    <p><strong>LSB Matching</strong></p>
+                    <p>Variance-based adaptive strength with ±1 modification</p>
+                    <div class="file-reference">
+                        <code>src/embedding_engine.py</code><br>
+                        Lines 150-250: Adaptive strength<br>
+                        Lines 400-600: LSB matching
+                    </div>
+                </div>
+
+                <div class="tech-card">
+                    <h4>🌐 Web Interface</h4>
+                    <p><strong>Gradio 3.0+</strong></p>
+                    <p>Interactive web UI with tabbed interface for embedding/extraction</p>
+                    <div class="file-reference">
+                        <code>app.py</code><br>
+                        Lines 1-600: Complete Gradio interface<br>
+                        Lines 200-350: Embed/extract functions
+                    </div>
+                </div>
+
+                <div class="tech-card">
+                    <h4>☁️ Deployment</h4>
+                    <p><strong>Hugging Face Spaces</strong></p>
+                    <p>Cloud deployment with automatic GPU acceleration (CUDA/CPU fallback)</p>
+                    <div class="file-reference">
+                        <code>pixelnur/app.py</code><br>
+                        <code>pixelnur/README.md</code><br>
+                        Deployment configuration
+                    </div>
+                </div>
+            </div>
+
+            <h3>Complete Technology Stack</h3>
+            <table>
+                <tr>
+                    <th>Category</th>
+                    <th>Technology</th>
+                    <th>Version</th>
+                    <th>Purpose</th>
+                </tr>
+                <tr>
+                    <td>Deep Learning</td>
+                    <td>PyTorch</td>
+                    <td>≥2.0.0</td>
+                    <td>CNN inference, GPU acceleration</td>
+                </tr>
+                <tr>
+                    <td>Deep Learning</td>
+                    <td>TorchVision</td>
+                    <td>≥0.15.0</td>
+                    <td>Pre-trained ResNet-18 model</td>
+                </tr>
+                <tr>
+                    <td>Image Processing</td>
+                    <td>OpenCV</td>
+                    <td>≥4.8.0</td>
+                    <td>Image I/O, color conversion, Sobel</td>
+                </tr>
+                <tr>
+                    <td>Scientific Computing</td>
+                    <td>NumPy</td>
+                    <td>≥1.24.0</td>
+                    <td>Array operations, numerical computing</td>
+                </tr>
+                <tr>
+                    <td>Scientific Computing</td>
+                    <td>SciPy</td>
+                    <td>≥1.10.0</td>
+                    <td>Signal processing, filters</td>
+                </tr>
+                <tr>
+                    <td>Image Processing</td>
+                    <td>Pillow</td>
+                    <td>≥10.0.0</td>
+                    <td>Image format support</td>
+                </tr>
+                <tr>
+                    <td>Image Processing</td>
+                    <td>scikit-image</td>
+                    <td>≥0.21.0</td>
+                    <td>Quality metrics (PSNR, SSIM)</td>
+                </tr>
+                <tr>
+                    <td>Wavelets</td>
+                    <td>PyWavelets</td>
+                    <td>≥1.4.0</td>
+                    <td>Wavelet transform utilities</td>
+                </tr>
+                <tr>
+                    <td>Error Correction</td>
+                    <td>reedsolo</td>
+                    <td>≥1.7.0</td>
+                    <td>Reed-Solomon ECC</td>
+                </tr>
+                <tr>
+                    <td>Cryptography</td>
+                    <td>pycryptodome</td>
+                    <td>≥3.18.0</td>
+                    <td>AES encryption, hashing</td>
+                </tr>
+                <tr>
+                    <td>Web Framework</td>
+                    <td>Gradio</td>
+                    <td>≥3.0</td>
+                    <td>Web interface, file upload/download</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- System Architecture -->
+        <div class="slide">
+            <h2>🏗️ System Architecture & Data Flow</h2>
+            
+            <div class="architecture-diagram">
+                <h3>Complete Embedding Pipeline</h3>
+                
+                <div class="layer">1. Input Layer</div>
+                <div class="sub-layer">
+                    <strong>Inputs:</strong> Cover Image (PNG/JPEG) + Secret Message (Text/Binary) + Password (≥16 chars)
+                    <br><strong>File:</strong> <code>app.py</code> - Lines 200-250 (embed_interface function)
+                    <br><strong>Validation:</strong> Image size (256×256 to 2048×2048), password length, message non-empty
+                </div>
+
+                <div class="layer">2. CNN Texture Analysis Module</div>
+                <div class="sub-layer">
+                    <strong>ResNet-18 Backbone + Custom Head</strong>
+                    <br><strong>File:</strong> <code>src/cnn_module.py</code> - Lines 257-318 (generate_mask method)
+                    <br><br><strong>Step 2.1: Preprocessing</strong> (Lines 188-218)
+                    <br>• Convert BGR → RGB
+                    <br>• Resize to 512×512
+                    <br>• Normalize with ImageNet statistics (mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+                    <br>• Convert to PyTorch tensor
+                    <br><br><strong>Step 2.2: CNN Inference</strong> (Lines 105-157 for model, 300-310 for inference)
+                    <br>• Forward pass through ResNet-18 backbone (512 channels, 16×16 resolution)
+                    <br>• Custom head: 512→256→128→64→1 channels with ReLU, BatchNorm, Sigmoid
+                    <br>• Output: Continuous mask values in [0, 1]
+                    <br><br><strong>Step 2.3: Postprocessing</strong> (Lines 219-256)
+                    <br>• Resize mask to LWT sub-band dimensions (H/2 × W/2)
+                    <br>• Apply threshold (default: 0.5) to create binary mask
+                    <br><br><strong>Step 2.4: Validation & Fallback</strong> (Lines 305-318)
+                    <br>• Count non-zero pixels: <code>non_zero_percentage = (count / total) * 100</code>
+                    <br>• If percentage < 5.0% (MASK_VALIDITY_THRESHOLD):
+                    <br>&nbsp;&nbsp;→ Log warning message
+                    <br>&nbsp;&nbsp;→ Call <code>_generate_sobel_fallback_mask()</code> (Lines 280-320)
+                    <br>&nbsp;&nbsp;→ Sobel: Calculate gradients, compute magnitude, threshold at 70th percentile
+                    <br>&nbsp;&nbsp;→ Return fallback mask (~30% non-zero pixels)
+                    <br>• Else: Return CNN mask unchanged
+                </div>
+
+                <div class="layer">3. Encryption Layer</div>
+                <div class="sub-layer">
+                    <strong>SHA-256 + XOR Cipher (Slice Encryption)</strong>
+                    <br><strong>File:</strong> <code>src/encryption_service.py</code> - Lines 50-100
+                    <br><br><strong>Step 3.1: Key Validation</strong> (Lines 30-48)
+                    <br>• Verify password length ≥ 16 characters
+                    <br>• Raise ValueError if invalid
+                    <br><br><strong>Step 3.2: Hash Generation</strong> (Lines 50-60)
+                    <br>• Generate SHA-256 hash: <code>hashlib.sha256(key.encode('utf-8')).digest()</code>
+                    <br>• Result: 32-byte hash digest
+                    <br><br><strong>Step 3.3: Keystream Generation</strong> (Lines 62-75)
+                    <br>• Repeat hash to match message length
+                    <br>• <code>keystream = (hash * repeats)[:message_length]</code>
+                    <br><br><strong>Step 3.4: XOR Encryption</strong> (Lines 77-90)
+                    <br>• <code>encrypted = bytes(a ^ b for a, b in zip(message, keystream))</code>
+                    <br>• Length preservation: <code>len(encrypted) == len(message)</code>
+                </div>
+
+                <div class="layer">4. Lifting Wavelet Transform (LWT)</div>
+                <div class="sub-layer">
+                    <strong>2-Level Haar Wavelet Decomposition</strong>
+                    <br><strong>File:</strong> <code>src/lwt_transform.py</code> - Lines 300-350 (forward method)
+                    <br><br><strong>Step 4.1: Color Space Conversion</strong> (Lines 50-80)
+                    <br>• Convert RGB → YCbCr using ITU-R BT.601 matrix
+                    <br>• Extract Y channel (luminance) for embedding
+                    <br>• Store Cb, Cr channels for later reconstruction
+                    <br><br><strong>Step 4.2: Level 1 Decomposition</strong> (Lines 200-250)
+                    <br>• Apply 2D Haar wavelet transform
+                    <br>• Output: LL1 (approximation), LH1, HL1, HH1 (details)
+                    <br>• Each sub-band: H/2 × W/2 dimensions
+                    <br><br><strong>Step 4.3: Level 2 Decomposition</strong> (Lines 200-250, applied to LL1)
+                    <br>• Apply 2D Haar wavelet to LL1
+                    <br>• Output: LL2, LH2, HL2, HH2
+                    <br>• Each sub-band: H/4 × W/4 dimensions
+                    <br><br><strong>Result:</strong> 7 sub-bands total
+                    <br>• LL2: Low-frequency approximation (NOT used for embedding)
+                    <br>• LH2, HL2, HH2: Level 2 details (HIGH priority for embedding)
+                    <br>• LH1, HL1, HH1: Level 1 details (MEDIUM priority for embedding)
+                </div>
+
+                <div class="layer">5. Robustness Layer (Optional)</div>
+                <div class="sub-layer">
+                    <strong>Reed-Solomon Error Correction Coding</strong>
+                    <br><strong>File:</strong> <code>src/robustness_layer.py</code>
+                    <br><br><strong>Robustness Levels:</strong>
+                    <br>• <strong>None (0):</strong> No ECC, 100% capacity, no attack resistance
+                    <br>• <strong>Low (1):</strong> 10 ECC symbols, 80% capacity, light JPEG resistance
+                    <br>• <strong>Medium (2):</strong> 32 ECC symbols, 27% capacity, moderate attack resistance
+                    <br>• <strong>High (3):</strong> 64 ECC symbols, 16% capacity, maximum protection
+                    <br><br><strong>ECC Encoding:</strong>
+                    <br>• <code>encoded = rs.encode(message)</code>
+                    <br>• <code>encoded_length = message_length + nsym</code>
+                    <br><br><strong>Message Replication (Medium/High):</strong>
+                    <br>• Replicate message 3× (medium) or 4× (high)
+                    <br>• Majority voting during extraction for error recovery
+                </div>
+
+                <div class="layer">6. Adaptive Embedding Engine</div>
+                <div class="sub-layer">
+                    <strong>LSB Matching with Variance-Based Adaptive Strength</strong>
+                    <br><strong>File:</strong> <code>src/embedding_engine.py</code> - Lines 400-600 (embed method)
+                    <br><br><strong>Step 6.1: Local Variance Calculation</strong> (Lines 150-200)
+                    <br>• Calculate variance in 3×3 neighborhoods
+                    <br>• <code>variance = E[X²] - E[X]²</code> using uniform filters
+                    <br>• Higher variance = more texture = stronger embedding possible
+                    <br><br><strong>Step 6.2: Adaptive Strength Calculation</strong> (Lines 202-250)
+                    <br>• <code>strength = α × w × (1 + log(1 + variance))</code>
+                    <br>• α = base_alpha (default: 0.1)
+                    <br>• w = perceptual weight (LH2/HL2: 1.0, HH2: 0.9, LH1/HL1: 0.7, HH1: 0.6)
+                    <br>• Clamp to [0.5α×w, 2.0α×w] range
+                    <br><br><strong>Step 6.3: Header Embedding</strong> (Lines 450-500)
+                    <br>• Embed 56-bit header in first 56 coefficients of LH2
+                    <br>• Header format: "PNv2" (32 bits) + robustness_level (8 bits) + message_length (16 bits)
+                    <br>• Use fixed strength=3.0 for header robustness
+                    <br><br><strong>Step 6.4: Priority Queue Creation</strong> (Lines 350-400)
+                    <br>• Create max-heap of embedding locations
+                    <br>• Priority = CNN_mask_value × perceptual_weight
+                    <br>• Order: LH2 > HL2 > HH2 > LH1 > HL1 > HH1
+                    <br><br><strong>Step 6.5: LSB Matching Embedding</strong> (Lines 500-600)
+                    <br>• For each message bit:
+                    <br>&nbsp;&nbsp;→ Pop highest priority location from queue
+                    <br>&nbsp;&nbsp;→ Get coefficient and adaptive strength
+                    <br>&nbsp;&nbsp;→ Apply LSB matching: if LSB ≠ bit, modify by ±strength
+                    <br>&nbsp;&nbsp;→ ±1 modification (not direct LSB replacement) for better statistics
+                </div>
+
+                <div class="layer">7. Inverse Wavelet Transform</div>
+                
+                

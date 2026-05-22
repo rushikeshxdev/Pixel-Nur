@@ -258,7 +258,7 @@ class TestCNNMaskBugCondition:
                 print(f"\n{name}:")
                 print(f"  Image: {image.shape} -> Mask: {mask.shape}")
                 print(f"  Non-zero: {non_zero_percentage:.2f}%")
-                print(f"  Status: {'INVALID (<5%)' if is_invalid else 'VALID (≥5%)'}")
+                print(f"  Status: {'INVALID (<5%)' if is_invalid else 'VALID (>=5%)'}")
             
             # Document findings
             print(f"\n\nBug Scope Summary:")
@@ -270,7 +270,7 @@ class TestCNNMaskBugCondition:
             # UNFIXED CODE: Most/all masks will be invalid
             for result in results:
                 assert result['non_zero_percentage'] >= 20.0, (
-                    f"{result['name']}: Expected fallback mask with ≥20% non-zero pixels, "
+                    f"{result['name']}: Expected fallback mask with >=20% non-zero pixels, "
                     f"got {result['non_zero_percentage']:.2f}%. "
                     f"Fallback mechanism should ensure all masks are valid."
                 )
@@ -331,7 +331,7 @@ class TestBugConditionFunction:
         
         # Test at threshold (5.0%)
         mask = np.zeros((256, 256), dtype=np.uint8)
-        num_ones = int(mask.size * 0.05)
+        num_ones = int(np.ceil(mask.size * 0.05))
         mask.flat[:num_ones] = 1
         non_zero_percentage = (np.count_nonzero(mask) / mask.size) * 100
         # At exactly 5%, should NOT trigger bug condition (≥5% is valid)

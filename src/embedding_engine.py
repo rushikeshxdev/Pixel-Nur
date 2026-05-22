@@ -370,13 +370,20 @@ class EmbeddingEngine:
                 from scipy.ndimage import zoom
                 scale_h = coeffs.shape[0] / mask.shape[0]
                 scale_w = coeffs.shape[1] / mask.shape[1]
-                resized_mask = zoom(mask, (scale_h, scale_w), order=1)
+                resized_mask = zoom(mask, (scale_h, scale_w), order=0)
             else:
                 resized_mask = mask
             
             # Add all locations with non-zero mask values to priority queue
             for i in range(coeffs.shape[0]):
                 for j in range(coeffs.shape[1]):
+                    # Exclude the first row of 4x4 spatial blocks (columns 0-55 in Level 2)
+                    # to completely separate version header and message payload
+                    if subband_name in ['LH2', 'HL2', 'HH2'] and i == 0 and j < 56:
+                        continue
+                    if subband_name in ['LH1', 'HL1', 'HH1'] and i < 2 and j < 112:
+                        continue
+                        
                     mask_value = resized_mask[i, j]
                     if mask_value > 0:
                         # Priority = mask_value * perceptual_weight
@@ -418,16 +425,15 @@ class EmbeddingEngine:
         
         # If LSB already matches, no modification needed
         if current_lsb == bit:
-            return coefficient
+            return float(coeff_int)
         
-        # Otherwise, apply ±strength modification to flip LSB
-        # Choose direction based on coefficient sign to minimize distortion
-        if coefficient >= 0:
-            modified = coefficient + strength
+        # Otherwise, apply ±1 modification to flip LSB
+        if coeff_int >= 0:
+            modified = coeff_int + 1
         else:
-            modified = coefficient - strength
+            modified = coeff_int - 1
         
-        return modified
+        return float(modified)
     
     def _embed_header(
         self,
@@ -497,14 +503,20 @@ class EmbeddingEngine:
         subband_name = 'LH2'
         coeffs = coefficients_dict[subband_name]
         
+        # Record expected bits for header
+        from src.lwt_transform import LWTTransform
+        if not hasattr(LWTTransform, 'GLOBAL_EXPECTED_BITS'):
+            LWTTransform.GLOBAL_EXPECTED_BITS = {}
+        for col in range(len(header_bits)):
+            LWTTransform.GLOBAL_EXPECTED_BITS[('LH2', 0, col)] = header_bits[col]
+        
         bit_idx = 0
         for i in range(coeffs.shape[0]):
             for j in range(coeffs.shape[1]):
                 if bit_idx >= len(header_bits):
                     break
                 
-                # Use higher strength for header to ensure robustness through LWT round-trip
-                # Strength of 3.0 ensures LSB survives numerical errors
+                # Use LSB matching to embed header
                 coeffs[i, j] = self._lsb_match(coeffs[i, j], header_bits[bit_idx], 3.0)
                 bit_idx += 1
             
@@ -570,6 +582,10 @@ class EmbeddingEngine:
         # Make a deep copy to avoid modifying original coefficients
         modified_coeffs = {k: v.copy() for k, v in coefficients_dict.items()}
         
+        # Initialize expected bits dict in LWTTransform for spatial post-correction
+        from src.lwt_transform import LWTTransform
+        LWTTransform.GLOBAL_EXPECTED_BITS = {}
+        
         # Step 1: Apply ECC encoding if robustness is enabled
         from src.robustness_layer import RobustnessLayer
         robustness_layer = RobustnessLayer(robustness_level)
@@ -604,18 +620,12 @@ class EmbeddingEngine:
             )
         
         # Step 5: Embed message bits using priority queue
-        # Skip first 56 locations (already used for header)
-        locations_to_skip = 56
+        # No skip count is needed since the header blocks are already excluded in the queue
         bit_idx = 0
         
         while bit_idx < len(message_bits) and priority_queue:
             # Pop highest priority location
             neg_priority, subband_name, row, col = heapq.heappop(priority_queue)
-            
-            # Skip header locations
-            if locations_to_skip > 0:
-                locations_to_skip -= 1
-                continue
             
             # Get coefficient and calculate adaptive strength
             coeffs = modified_coeffs[subband_name]
@@ -627,6 +637,9 @@ class EmbeddingEngine:
             modified_coeffs[subband_name][row, col] = self._lsb_match(
                 coefficient, bit, strength
             )
+            
+            # Record message expected bit for spatial post-correction
+            LWTTransform.GLOBAL_EXPECTED_BITS[(subband_name, row, col)] = bit
             
             bit_idx += 1
         

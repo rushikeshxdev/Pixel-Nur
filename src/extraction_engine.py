@@ -181,15 +181,23 @@ class ExtractionEngine:
             
             # Resize mask to match coefficient dimensions
             if mask.shape != coeffs.shape:
+                from scipy.ndimage import zoom
                 scale_h = coeffs.shape[0] / mask.shape[0]
                 scale_w = coeffs.shape[1] / mask.shape[1]
-                resized_mask = zoom(mask, (scale_h, scale_w), order=1)
+                resized_mask = zoom(mask, (scale_h, scale_w), order=0)
             else:
                 resized_mask = mask
             
             # Add all locations with non-zero mask values to priority queue
             for i in range(coeffs.shape[0]):
                 for j in range(coeffs.shape[1]):
+                    # Exclude the first row of 4x4 spatial blocks (columns 0-55 in Level 2)
+                    # to completely separate version header and message payload
+                    if subband_name in ['LH2', 'HL2', 'HH2'] and i == 0 and j < 56:
+                        continue
+                    if subband_name in ['LH1', 'HL1', 'HH1'] and i < 2 and j < 112:
+                        continue
+                        
                     mask_value = resized_mask[i, j]
                     if mask_value > 0:
                         # Priority = mask_value * perceptual_weight
@@ -244,15 +252,9 @@ class ExtractionEngine:
             mask
         )
         
-        # Skip first 56 locations (header)
-        header_skip = 56
-        
-        # Extract bits from priority locations
+        # Extract bits from priority locations (no skip needed since header is excluded in priority queue)
         extracted_bits = []
         for idx, (subband_name, row, col) in enumerate(extraction_locations):
-            if idx < header_skip:
-                continue  # Skip header locations
-            
             if len(extracted_bits) >= num_bits:
                 break
             

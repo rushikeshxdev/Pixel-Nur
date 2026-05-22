@@ -235,10 +235,10 @@ def embed_interface(
     
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}", exc_info=True)
-        return None, "❌ An unexpected error occurred. Please try again.", "", ""
+        return None, f"❌ Error: {str(e)}", "", ""
 
 
-def extract_interface(stego_file: str, password: str) -> str:
+def extract_interface(stego_file: str, password: str, cover_image: Optional[np.ndarray] = None) -> str:
     """Gradio interface function for extraction."""
     try:
         if not stego_file:
@@ -254,11 +254,16 @@ def extract_interface(stego_file: str, password: str) -> str:
         if not valid:
             return f"❌ {error}"
         
-        logger.info(f"Extract request: image_shape={stego_bgr.shape}, file={stego_file}")
+        # Process optional cover image (Gradio returns RGB numpy array)
+        cover_bgr = None
+        if cover_image is not None:
+            cover_bgr = cv2.cvtColor(cover_image, cv2.COLOR_RGB2BGR)
+        
+        logger.info(f"Extract request: image_shape={stego_bgr.shape}, file={stego_file}, has_cover={cover_bgr is not None}")
         
         encrypted_message = extraction_engine.extract(
             stego_image=stego_bgr,
-            cover_image=None
+            cover_image=cover_bgr
         )
         
         message_bytes = encryption_service.decrypt(encrypted_message, password)
@@ -277,10 +282,20 @@ def extract_interface(stego_file: str, password: str) -> str:
             f"• Image hasn't been modified\n"
             f"• Image contains embedded data"
         )
+    except UnicodeDecodeError as e:
+        logger.warning(f"UTF-8 decode error: {str(e)}")
+        return (
+            f"❌ Extraction failed: Unable to decode message as UTF-8.\n\n"
+            f"This usually means:\n"
+            f"• Wrong password (decryption produced invalid data)\n"
+            f"• Image has been modified or corrupted\n"
+            f"• Image doesn't contain embedded data\n\n"
+            f"Please verify your password and ensure the image hasn't been altered."
+        )
     
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}", exc_info=True)
-        return "❌ An unexpected error occurred. Please try again."
+        return f"❌ Error: {str(e)}"
 
 
 def create_gradio_app() -> gr.Blocks:
@@ -427,6 +442,15 @@ def create_gradio_app() -> gr.Blocks:
                             type="filepath"
                         )
 
+                        gr.Markdown("### 📸 Step 1.5: Upload Original Cover Image (Optional)")
+                        gr.Markdown("*Note: Highly recommended for Phase 2 (CNN) stego images to achieve 100% perfect extraction.*")
+                        extract_cover = gr.Image(
+                            label="Original Cover Image",
+                            type="numpy",
+                            height=250,
+                            elem_classes="image-upload"
+                        )
+
                         gr.Markdown("### 🔑 Step 2: Enter Password")
                         extract_password = gr.Textbox(
                             label="Decryption Password",
@@ -446,10 +470,10 @@ def create_gradio_app() -> gr.Blocks:
                         <div style="background: linear-gradient(135deg, #fd79a8 0%, #e84393 100%); padding: 1.5rem; border-radius: 0.75rem; margin-top: 1rem; color: white;">
                             <h4 style="margin: 0 0 0.5rem 0;">⚠️ Important</h4>
                             <ul style="margin: 0; padding-left: 1.5rem;">
-                                <li><strong>Upload the PNG file directly</strong> (not a screenshot)</li>
-                                <li>Don't re-save or edit the image</li>
-                                <li>Password must match exactly</li>
-                                <li>File must be the original downloaded PNG</li>
+                                <li>For Phase 2 (CNN) images, uploading the original cover image is recommended to guarantee perfect bit recovery.</li>
+                                <li><strong>Upload the PNG file directly</strong> (not a screenshot).</li>
+                                <li>Don't re-save or edit the image.</li>
+                                <li>Password must match exactly.</li>
                             </ul>
                         </div>
                         """)
@@ -466,7 +490,7 @@ def create_gradio_app() -> gr.Blocks:
                 
                 extract_button.click(
                     fn=extract_interface,
-                    inputs=[extract_image, extract_password],
+                    inputs=[extract_image, extract_password, extract_cover],
                     outputs=extract_output
                 )
             
@@ -537,4 +561,4 @@ def create_gradio_app() -> gr.Blocks:
 
 if __name__ == "__main__":
     app = create_gradio_app()
-    app.launch(css=CUSTOM_CSS)
+    app.launch(server_name="0.0.0.0", server_port=7860, css=CUSTOM_CSS)

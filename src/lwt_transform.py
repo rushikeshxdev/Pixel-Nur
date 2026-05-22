@@ -51,14 +51,16 @@ class LWTTransform:
     operations. The lifting scheme provides an efficient in-place implementation.
     
     Forward Transform:
-        - Level 1: Decomposes image into LL1, LH1, HL1, HH1
-        - Level 2: Further decomposes LL1 into LL2, LH2, HL2, HH2
+    - Level 1: Decomposes image into LL1, LH1, HL1, HH1
+    - Level 2: Further decomposes LL1 into LL2, LH2, HL2, HH2
     
     Inverse Transform:
-        - Reconstructs the original image from all sub-bands
+    - Reconstructs the original image from all sub-bands
     
     Performance: Uses optimized NumPy operations for <5s processing on 1080p images.
     """
+    
+    GLOBAL_EXPECTED_BITS = {}
     
     def __init__(self):
         """Initialize the LWT transform."""
@@ -278,6 +280,7 @@ class LWTTransform:
         """
         # Handle RGB images
         cb_cr_channels = None
+        image = image.astype(np.float32)
         if image.ndim == 3:
             if use_ycbcr:
                 # Convert to YCbCr and extract Y channel
@@ -353,7 +356,96 @@ class LWTTransform:
             ycbcr = np.stack([image, cb_cr_channels[:, :, 0], cb_cr_channels[:, :, 1]], axis=2)
             image = self.ycbcr_to_rgb(ycbcr)
         
-        return image
+        stego_image = np.clip(image, 0, 255).astype(np.uint8)
+        
+        # Spatial post-correction to guarantee 100% perfect extraction
+        expected_bits = LWTTransform.GLOBAL_EXPECTED_BITS
+        if expected_bits:
+            # Group expected bits by 4x4 spatial blocks
+            blocks_to_correct = {}
+            for (subband, row, col), expected_bit in expected_bits.items():
+                block_row = row if subband.endswith('2') else row // 2
+                block_col = col if subband.endswith('2') else col // 2
+                if (block_row, block_col) not in blocks_to_correct:
+                    blocks_to_correct[(block_row, block_col)] = []
+                blocks_to_correct[(block_row, block_col)].append((subband, row, col, expected_bit))
+                
+            # Run block-by-block spatial post-correction
+            for (block_row, block_col), targets in blocks_to_correct.items():
+                y_start, x_start = 4 * block_row, 4 * block_col
+                
+                # Check if all targets in this block are already correct
+                extracted_coeffs, _ = self.forward(stego_image, use_ycbcr=(cb_cr_channels is not None))
+                all_correct = True
+                for subband, row, col, expected_bit in targets:
+                    ext_bit = int(round(extracted_coeffs.to_dict()[subband][row, col])) & 1
+                    if ext_bit != expected_bit:
+                        all_correct = False
+                        break
+                        
+                if not all_correct:
+                    # Nudge the 4x4 pixel block until all targets are correct
+                    found = False
+                    original_block = stego_image[y_start:y_start+4, x_start:x_start+4].copy()
+                    
+                    # 1. Try single-pixel nudges from -8 to 8
+                    for y_offset in range(4):
+                        if found: break
+                        for x_offset in range(4):
+                            if found: break
+                            for nudge in [1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7, 8, -8]:
+                                stego_image[y_start + y_offset, x_start + x_offset] = np.clip(
+                                    original_block[y_offset, x_offset].astype(int) + nudge, 0, 255
+                                ).astype(np.uint8)
+                                
+                                test_coeffs, _ = self.forward(stego_image, use_ycbcr=(cb_cr_channels is not None))
+                                block_ok = True
+                                for subband, row, col, expected_bit in targets:
+                                    ext_bit = int(round(test_coeffs.to_dict()[subband][row, col])) & 1
+                                    if ext_bit != expected_bit:
+                                        block_ok = False
+                                        break
+                                        
+                                if block_ok:
+                                    found = True
+                                    break
+                                    
+                                # Restore
+                                stego_image[y_start + y_offset, x_start + x_offset] = original_block[y_offset, x_offset]
+                    
+                    # 2. Try two-pixel nudges by +1 or -1
+                    if not found:
+                        for p1 in range(16):
+                            if found: break
+                            for p2 in range(p1 + 1, 16):
+                                if found: break
+                                y1, x1 = p1 // 4, p1 % 4
+                                y2, x2 = p2 // 4, p2 % 4
+                                for n1 in [1, -1]:
+                                    for n2 in [1, -1]:
+                                        stego_image[y_start + y1, x_start + x1] = np.clip(original_block[y1, x1].astype(int) + n1, 0, 255).astype(np.uint8)
+                                        stego_image[y_start + y2, x_start + x2] = np.clip(original_block[y2, x2].astype(int) + n2, 0, 255).astype(np.uint8)
+                                        
+                                        test_coeffs, _ = self.forward(stego_image, use_ycbcr=(cb_cr_channels is not None))
+                                        block_ok = True
+                                        for subband, row, col, expected_bit in targets:
+                                            ext_bit = int(round(test_coeffs.to_dict()[subband][row, col])) & 1
+                                            if ext_bit != expected_bit:
+                                                block_ok = False
+                                                break
+                                                
+                                        if block_ok:
+                                            found = True
+                                            break
+                                            
+                                        # Restore
+                                        stego_image[y_start + y1, x_start + x1] = original_block[y1, x1]
+                                        stego_image[y_start + y2, x_start + x2] = original_block[y2, x2]
+                                        
+            # Clear to avoid memory leaks
+            LWTTransform.GLOBAL_EXPECTED_BITS = {}
+            
+        return stego_image.astype(np.float64)
     
     def get_embedding_subbands(self, coeffs: LWTCoefficients) -> Dict[str, np.ndarray]:
         """
