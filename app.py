@@ -42,7 +42,7 @@ ROBUSTNESS_LEVELS = {
 
 MIN_PASSWORD_LENGTH = 16
 MIN_IMAGE_SIZE = 256
-MAX_IMAGE_SIZE = 2048
+MAX_IMAGE_SIZE = 4320
 
 # Custom CSS for beautiful UI with better contrast
 CUSTOM_CSS = """
