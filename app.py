@@ -145,8 +145,8 @@ def _validate_image(image: np.ndarray) -> Tuple[bool, str]:
     if image is None or image.size == 0:
         return False, "No image provided. Please upload a valid image."
     
-    if len(image.shape) != 3 or image.shape[2] != 3:
-        return False, "Invalid image format. Please upload a color image (RGB)."
+    if len(image.shape) != 3 or image.shape[2] not in (3, 4):
+        return False, "Invalid image format. Please upload a color image (RGB or RGBA)."
     
     h, w = image.shape[:2]
     if h < MIN_IMAGE_SIZE or w < MIN_IMAGE_SIZE:
@@ -193,6 +193,10 @@ def embed_interface(
         if not valid:
             raise gr.Error(error)
         
+        # Convert RGBA to RGB if necessary
+        if cover_image.shape[2] == 4:
+            cover_image = cv2.cvtColor(cover_image, cv2.COLOR_RGBA2RGB)
+            
         cover_bgr = cv2.cvtColor(cover_image, cv2.COLOR_RGB2BGR)
         robustness_value = _parse_robustness_level(robustness_level)
         
