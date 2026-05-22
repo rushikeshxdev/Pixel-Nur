@@ -175,7 +175,7 @@ def _parse_robustness_level(level_str: str) -> str:
 
 
 def embed_interface(
-    cover_image: np.ndarray,
+    cover_image: Optional[np.ndarray],
     message: str,
     password: str,
     robustness_level: str
@@ -184,14 +184,14 @@ def embed_interface(
     try:
         valid, error = _validate_image(cover_image)
         if not valid:
-            return None, f"❌ {error}", "", ""
+            raise gr.Error(error)
         
         if not message or not message.strip():
-            return None, "❌ Message cannot be empty.", "", ""
+            raise gr.Error("Message cannot be empty.")
         
         valid, error = _validate_password(password)
         if not valid:
-            return None, f"❌ {error}", "", ""
+            raise gr.Error(error)
         
         cover_bgr = cv2.cvtColor(cover_image, cv2.COLOR_RGB2BGR)
         robustness_value = _parse_robustness_level(robustness_level)
@@ -227,32 +227,32 @@ def embed_interface(
         
     except InsufficientCapacityError as e:
         logger.warning(f"Capacity error: {str(e)}")
-        return None, f"❌ {str(e)}", "", ""
+        raise gr.Error(str(e))
     
     except PixelNurError as e:
         logger.error(f"PixelNur error: {str(e)}")
-        return None, f"❌ {str(e)}", "", ""
+        raise gr.Error(str(e))
     
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}", exc_info=True)
-        return None, f"❌ Error: {str(e)}", "", ""
+        raise gr.Error(f"An unexpected error occurred: {str(e)}")
 
 
 def extract_interface(stego_file: str, password: str, cover_image: Optional[np.ndarray] = None) -> str:
     """Gradio interface function for extraction."""
     try:
         if not stego_file:
-            return "❌ Please upload a stego image file."
+            raise gr.Error("Please upload a stego image file.")
         
         # Read image directly from file to avoid Gradio conversion
         stego_bgr = cv2.imread(stego_file)
         
         if stego_bgr is None:
-            return "❌ Failed to read image file. Please upload a valid PNG file."
+            raise gr.Error("Failed to read image file. Please upload a valid PNG file.")
         
         valid, error = _validate_password(password)
         if not valid:
-            return f"❌ {error}"
+            raise gr.Error(error)
         
         # Process optional cover image (Gradio returns RGB numpy array)
         cover_bgr = None
@@ -275,8 +275,8 @@ def extract_interface(stego_file: str, password: str, cover_image: Optional[np.n
         
     except ExtractionError as e:
         logger.warning(f"Extraction error: {str(e)}")
-        return (
-            f"❌ Extraction failed: {str(e)}\n\n"
+        raise gr.Error(
+            f"Extraction failed: {str(e)}\n\n"
             f"Please verify:\n"
             f"• Correct password\n"
             f"• Image hasn't been modified\n"
@@ -284,8 +284,8 @@ def extract_interface(stego_file: str, password: str, cover_image: Optional[np.n
         )
     except UnicodeDecodeError as e:
         logger.warning(f"UTF-8 decode error: {str(e)}")
-        return (
-            f"❌ Extraction failed: Unable to decode message as UTF-8.\n\n"
+        raise gr.Error(
+            f"Extraction failed: Unable to decode message as UTF-8.\n\n"
             f"This usually means:\n"
             f"• Wrong password (decryption produced invalid data)\n"
             f"• Image has been modified or corrupted\n"
@@ -295,7 +295,7 @@ def extract_interface(stego_file: str, password: str, cover_image: Optional[np.n
     
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}", exc_info=True)
-        return f"❌ Error: {str(e)}"
+        raise gr.Error(f"An unexpected error occurred: {str(e)}")
 
 
 def create_gradio_app() -> gr.Blocks:
