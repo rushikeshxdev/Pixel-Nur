@@ -1,164 +1,185 @@
----
-title: PixelNur
-emoji: 🔒
-colorFrom: indigo
-colorTo: purple
-sdk: gradio
-sdk_version: 4.26.0
-python_version: 3.11
-app_file: app.py
-pinned: false
-license: mit
----
+# PixelNur — Steganography Tool
 
-<div align="center">
-  
-# 🔒 PixelNur
-### Advanced CNN-Based Steganography System
-*Hide secret messages inside images with military-grade encryption*
-
-[![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-Hugging_Face-yellow)](https://huggingface.co/spaces/imrushikesh09/pixelnur)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org/)
-[![Gradio](https://img.shields.io/badge/Gradio-orange?logo=gradio)](https://gradio.app/)
-
-[🚀 Try It Now](https://huggingface.co/spaces/imrushikesh09/pixelnur) • [🐛 Report Bug](https://github.com/rushikeshxdev/pixelNur/issues) • [📖 How It Works](#-how-it-works)
-
-</div>
+Hide AES-256 encrypted messages inside images using LSB substitution.  
+The stego image is visually indistinguishable from the original.
 
 ---
 
-## ✨ Features
+## What It Does
 
-| Feature | Description |
-|---------|-------------|
-| 🧠 **CNN-Based Adaptive Embedding** | Intelligent texture analysis for imperceptible hiding |
-| 🔐 **AES-256 Encryption** | Military-grade security with PBKDF2 key derivation |
-| 🛡️ **Attack Resistant** | Survives JPEG compression, resizing & filtering |
-| 📊 **High Quality Output** | PSNR >40 dB, SSIM >0.99 — visually identical |
-| ⚡ **GPU Accelerated** | Fast processing with CUDA support |
-| 🎯 **Blind Extraction** | No original image needed for decoding |
+- **Embed** — Encrypts your message with AES-256-GCM and hides it in the pixel data of any image
+- **Extract** — Reads the hidden bits from a stego image and decrypts the message back
+- **Image Search** — Search and pick a cover image directly from inside the app (Pixabay)
+- **History** — Every embed/extract session is saved in the browser (localStorage)
+- **Share** — Share the stego image or extracted message to WhatsApp, Telegram, and other apps
 
 ---
 
-## 🚀 Quick Start
+## Tech Stack
 
-### ▶️ Embed a Message
-1. Upload your cover image (PNG/JPEG)
-2. Type your secret message
-3. Set a strong password (16+ characters recommended)
-4. Choose a robustness level
-5. Download the stego image
-
-### 🔍 Extract a Message
-1. Upload the stego image
-2. Enter the correct password
-3. Click Extract — your hidden message is revealed
-
----
-
-## 🎚️ Robustness Levels
-
-| Level | Quality | Capacity | Attack Resistance | Best For |
-|-------|---------|----------|-------------------|----------|
-| **None** | ⭐⭐⭐⭐⭐ | 100% | None | Trusted local channels |
-| **Low** | ⭐⭐⭐⭐ | 80% | Light JPEG | Social media platforms |
-| **Medium** | ⭐⭐⭐ | 27% | JPEG QF 75+ | Messaging apps |
-| **High** | ⭐⭐ | 16% | Maximum protection | Hostile environments |
+| Layer | Technology | Purpose |
+|---|---|---|
+| Backend | Python 3.11 + Flask | REST API, file handling |
+| Steganography | NumPy | LSB bit manipulation on pixel arrays |
+| Image I/O | Pillow | Open/save images, force RGB mode |
+| Encryption | pycryptodome | AES-256-GCM + PBKDF2-HMAC-SHA256 |
+| Image Search | Pixabay API | Free image search (API key required) |
+| HTTP client | requests | Pixabay API calls + image proxy |
+| Config | python-dotenv | Load API key from `.env` file |
+| Frontend | HTML + Tailwind CSS | Single-page app, no build step |
 
 ---
 
-## 🔬 How It Works
+## Prerequisites
 
-```
-Cover Image → LWT Transform → CNN Mask → AES-256 Encrypt → LSB Embed → Stego Image
-                                                                              ↓
-                                                                       Extraction ← Password
-```
-
-1. **Lifting Wavelet Transform (LWT)** — Decomposes the image into frequency sub-bands
-2. **CNN Texture Analysis** — A lightweight CNN generates a texture-aware embedding mask
-3. **AES-256-CBC Encryption** — Message is encrypted with PBKDF2-HMAC-SHA256 key derivation
-4. **Error Correction & Replication** — Optional redundancy for robustness against attacks
-5. **LSB Matching Embedding** — Bits are embedded in the frequency domain using the CNN mask
-6. **Blind Extraction** — Decoder reconstructs the message using only the password
+- **Python 3.11** — [python.org/downloads](https://www.python.org/downloads/)
+- **Pixabay API key** — free, no credit card required (see below)
 
 ---
 
-## 📊 Performance Metrics
+## Getting a Pixabay API Key
 
-| Metric | Value |
-|--------|-------|
-| **PSNR** | 40–48 dB |
-| **SSIM** | 0.96–0.99 |
-| **Capacity** | 8–128 KB (varies by image & robustness) |
-| **Processing Speed** | 2–15 seconds (GPU accelerated) |
+The image search feature requires a free Pixabay API key.
 
----
+1. Go to **[pixabay.com/api/docs](https://pixabay.com/api/docs/)**
+2. Click **"Get a free API key"** and sign up with your email
+3. After login, your API key is shown on that same page
+4. Copy it — you will paste it into the `.env` file (step 3 below)
 
-## 🛠️ Tech Stack
-
-- **Deep Learning**: PyTorch — CNN-based texture analysis
-- **Image Processing**: OpenCV, Lifting Wavelet Transform (LWT)
-- **Cryptography**: AES-256-CBC, PBKDF2-HMAC-SHA256
-- **Web Interface**: Gradio
-- **Deployment**: Hugging Face Spaces
+> Without the key, all other features (embed, extract, history, share) still work normally.  
+> Only the "Search online" button in the Embed page will be disabled.
 
 ---
 
-## 📦 Installation
+## Installation
+
+### 1. Install dependencies
 
 ```bash
-# Clone the repository
-git clone https://github.com/rushikeshxdev/pixelNur.git
 cd pixelNur
-
-# Install dependencies
 pip install -r requirements.txt
-
-# Run the app
-python app.py
 ```
 
-The app will launch at `http://localhost:7860` by default.
+Or install manually:
 
-### Requirements
+```bash
+pip install flask pillow numpy pycryptodome requests python-dotenv
+```
+
+### 2. Create the `.env` file
+
+A template is already provided. Copy it:
+
+```bash
+# Windows
+copy .env.example .env
+
+# macOS / Linux
+cp .env.example .env
+```
+
+### 3. Add your Pixabay API key
+
+Open `.env` and replace the placeholder with your actual key:
 
 ```
-torch>=1.9.0
-torchvision
-opencv-python
-gradio>=3.0
-pycryptodome
-numpy
-Pillow
-scipy
+PIXABAY_API_KEY=your_actual_key_here
 ```
 
 ---
 
-## 📁 Project Structure
+## Running the App
+
+### Option 1 — Windows launcher (easiest)
+
+Double-click **`run_simple.bat`** in the `pixelNur` folder.
+
+### Option 2 — Terminal
+
+```bash
+# Windows (Python 3.11 full path)
+C:\Users\PRATHAMESH\AppData\Local\Programs\Python\Python311\python.exe server.py
+
+# macOS / Linux (if python3.11 is on PATH)
+python3.11 server.py
+```
+
+Then open **[http://localhost:7861](http://localhost:7861)** in your browser.
+
+---
+
+## How to Use
+
+### Embed a message
+
+1. Go to the **Embed** tab
+2. Upload a cover image — drag & drop, browse, camera, or search online
+3. Type your secret message
+4. Enter a strong password (16+ characters recommended)
+5. Choose a robustness level (None = best quality)
+6. Click **Embed Message**
+7. Download the output as **PNG** — never save as JPEG (JPEG compression destroys hidden bits)
+
+### Extract a message
+
+1. Go to the **Extract** tab
+2. Upload the stego **PNG** image
+3. Enter the same password used during embedding
+4. Click **Extract Message**
+5. The hidden message appears — use Copy or Share to send it
+
+---
+
+## Project Structure
 
 ```
 pixelNur/
-├── app.py              # Gradio web interface
-├── steganography.py    # Core embedding & extraction logic
-├── cnn_model.py        # CNN texture analysis model
-├── crypto.py           # AES-256 encryption utilities
-├── wavelet.py          # Lifting Wavelet Transform
-├── requirements.txt
-└── README.md
+├── server.py              ← Flask backend (API routes)
+├── run_simple.bat         ← Windows one-click launcher
+├── .env                   ← Your API key (gitignored, never commit this)
+├── .env.example           ← Template for the .env file
+├── requirements.txt       ← Python dependencies
+├── templates/
+│   └── index.html         ← Entire frontend (single-page app)
+└── src/
+    ├── simple_steg.py     ← Core LSB + AES-256-GCM algorithm
+    └── __init__.py
 ```
 
 ---
 
-## 🎓 Research Team
+## Security Details
+
+| Feature | Detail |
+|---|---|
+| Encryption | AES-256-GCM (authenticated encryption) |
+| Key derivation | PBKDF2-HMAC-SHA256, 100,000 iterations |
+| Salt | 16 bytes random, unique per message |
+| Nonce | 16 bytes random, unique per message |
+| Auth tag | 16-byte GCM tag — detects wrong password or tampering |
+| Packet header | `SNUR` magic (4B) + BPC byte + 4B length |
+
+Wrong password = clean error, not garbled output. The GCM tag fails authentication before any data is returned.
+
+---
+
+## Robustness Levels
+
+| Level | Bits/Channel | Effect |
+|---|---|---|
+| None | 1 bit | Best image quality, ~375 KB capacity per megapixel |
+| Low | 1 bit | Same as None |
+| Medium | 2 bits | 2× capacity, slightly lower quality |
+| High | 2 bits | Same as Medium |
+
+---
+
+## Team
 
 **KIT's College of Engineering, Kolhapur**
 
 | Name | Roll No. |
-|------|----------|
+|---|---|
 | Aman Qureshi | 2223000503 |
 | Rushikesh Randive | 2223000930 |
 | Ankita Patil | 2223000302 |
@@ -166,33 +187,6 @@ pixelNur/
 
 ---
 
-## 🔐 Security Notes
+## License
 
-- Always use a **strong, unique password** (16+ characters)
-- The system uses **AES-256-CBC** with a random IV per message
-- Keys are derived using **PBKDF2-HMAC-SHA256** with 100,000 iterations
-- For maximum security, use **None** robustness level and share stego images over trusted channels only
-
----
-
-## 📄 License
-
-This project is licensed under the **MIT License** — see [LICENSE](LICENSE) for details.
-
----
-
-## 🙏 Acknowledgments
-
-- Built with ❤️ for privacy and information security research
-- Powered by [Hugging Face Spaces](https://huggingface.co/spaces)
-- Inspired by academic research in adaptive steganography
-
----
-
-<div align="center">
-
-⭐ **Star this repo if you find it useful!**
-
-*Built with ❤️ for privacy • Powered by Hugging Face Spaces*
-
-</div>
+MIT License — see [LICENSE](LICENSE) for details.

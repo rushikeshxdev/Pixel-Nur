@@ -1,26 +1,6 @@
-# PixelNur Phase 2 - Hugging Face Spaces Dependencies
-# Gradio is automatically installed by HF Spaces
-
-# Core Dependencies
-numpy>=1.26.4,<2.0
-scipy>=1.10.0
-opencv-python-headless>=4.8.0
-torch>=2.0.0
-torchvision>=0.15.0
+flask>=3.0.0
 Pillow>=10.1.0
-
-# Wavelet Transform
-PyWavelets>=1.4.0
-
-# Error Correction
-reedsolo>=1.7.0
-
-# Encryption
+numpy>=1.26.4
 pycryptodome>=3.18.0
-
-# Image Processing
-scikit-image>=0.21.0
-
-# Pin huggingface_hub to avoid HfFolder removal compatibility crash in Gradio
-huggingface_hub<1.0.0
-
+requests>=2.31.0
+python-dotenv>=1.0.0
