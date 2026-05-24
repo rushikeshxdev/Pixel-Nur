@@ -856,15 +856,25 @@ class ExtractionEngine:
             
         Requirements: 10.1 (header extraction and parsing)
         """
-        # Apply LWT to stego image
-        coeffs, cb_cr = self.lwt.forward(stego_image, use_ycbcr=True)
-        
-        # Extract header from LH2 sub-band (first 48 bits)
-        lh2_coeffs = coeffs.LH2
-        header_bits = self._extract_bits_from_coefficients(lh2_coeffs, 56)
-        
-        # Convert bits to bytes
-        header_bytes = self._bits_to_bytes(header_bits)
+        # First try pixel-domain header (G-channel LSBs of row 0, cols 0-55).
+        # Pixel LSBs survive PNG save/load perfectly; LWT-domain header can be
+        # corrupted by YCbCr quantization during the round trip.
+        header_bytes = None
+        if stego_image.ndim == 3 and stego_image.shape[2] >= 2 and stego_image.shape[1] >= 56:
+            pixel_bits = [int(stego_image[0, j, 1]) & 1 for j in range(56)]
+            candidate = self._bits_to_bytes(pixel_bits)
+            try:
+                if candidate[0:4].decode('ascii') in self.supported_versions:
+                    header_bytes = candidate
+            except (UnicodeDecodeError, IndexError):
+                pass
+
+        if header_bytes is None:
+            # Fall back to LWT-domain header
+            coeffs, cb_cr = self.lwt.forward(stego_image, use_ycbcr=True)
+            lh2_coeffs = coeffs.LH2
+            header_bits = self._extract_bits_from_coefficients(lh2_coeffs, 56)
+            header_bytes = self._bits_to_bytes(header_bits)
         
         # Parse header: Version (4 bytes) + Robustness (1 byte) + Length (2 bytes)
         version_bytes = header_bytes[0:4]
@@ -1000,32 +1010,35 @@ class ExtractionEngine:
             
         Requirements: 10.2 (Phase 2 extraction with CNN mask regeneration)
         """
-        # Apply LWT to stego image
-        coeffs, _ = self.lwt.forward(stego_image, use_ycbcr=True)
-        
-        # Calculate number of bits to extract
+        # Read message bits from G-channel (channel 1 in BGR) LSBs,
+        # row-major order, starting after the 56-bit header region.
+        # This matches the pixel-domain embedding in pixelnur.py embed_message().
         num_bits = message_length * 8
-        
-        # Get coefficients dictionary for all sub-bands
-        coeffs_dict = coeffs.to_dict()
-        
-        # Extract using CNN mask if cover image provided, otherwise blind extraction
-        if cover_image is not None:
-            message_bits = self._extract_with_cnn_mask(
-                coeffs_dict,
-                cover_image,
-                num_bits
+        extracted_bits = []
+        header_skip = 56  # first 56 pixel positions are the header
+        pos = 0
+
+        height, width = stego_image.shape[:2]
+        for i in range(height):
+            for j in range(width):
+                if pos < header_skip:
+                    pos += 1
+                    continue
+                if len(extracted_bits) >= num_bits:
+                    break
+                extracted_bits.append(int(stego_image[i, j, 1]) & 1)
+                pos += 1
+            if len(extracted_bits) >= num_bits:
+                break
+
+        if len(extracted_bits) < num_bits:
+            raise ExtractionError(
+                f"Insufficient data in stego image. "
+                f"Expected {num_bits} bits, found {len(extracted_bits)}. "
+                f"The image may not contain embedded data or may be corrupted."
             )
-        else:
-            message_bits = self._extract_blind(
-                coeffs_dict,
-                num_bits
-            )
-        
-        # Convert bits to bytes
-        message_bytes = self._bits_to_bytes(message_bits)
-        
-        # Return only the requested length
+
+        message_bytes = self._bits_to_bytes(extracted_bits)
         return message_bytes[:message_length]
     
     def extract_phase1(

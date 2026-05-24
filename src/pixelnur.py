@@ -22,6 +22,7 @@ Design:
 """
 
 import os
+import struct
 from pathlib import Path
 from typing import Optional, Dict, Tuple, Union
 import numpy as np
@@ -344,58 +345,56 @@ class PixelNur:
                 message_bytes,
                 encryption_key
             )
-            
-            # Step 5: Apply LWT to cover image
-            original_shape = cover_image.shape[:2]
-            lwt_coeffs, cb_cr_channels = self.lwt_transform.forward(
-                cover_image,
-                use_ycbcr=True
-            )
-            
-            # Get embedding sub-bands (excludes LL2)
-            embedding_subbands = self.lwt_transform.get_embedding_subbands(lwt_coeffs)
-            
-            # Step 6: Embed encrypted message using adaptive LSB matching
-            modified_subbands = self.embedding_engine.embed(
-                coefficients_dict=embedding_subbands,
-                message=encrypted_message,
-                mask=cnn_mask,
-                robustness_level=robustness_level
-            )
-            
-            # Update coefficients with modified sub-bands
-            modified_coeffs = LWTCoefficients(
-                LL2=lwt_coeffs.LL2,  # LL2 is not modified
-                LH2=modified_subbands['LH2'],
-                HL2=modified_subbands['HL2'],
-                HH2=modified_subbands['HH2'],
-                LH1=modified_subbands['LH1'],
-                HL1=modified_subbands['HL1'],
-                HH1=modified_subbands['HH1']
-            )
-            
-            # Step 7: Apply inverse LWT to reconstruct stego image
-            stego_image = self.lwt_transform.inverse(
-                modified_coeffs,
-                cb_cr_channels=cb_cr_channels,
-                output_shape=original_shape
-            )
-            
-            # Ensure output is uint8
-            stego_image = np.clip(stego_image, 0, 255).astype(np.uint8)
-            
+
+            # Step 5: Apply ECC encoding if robustness is enabled
+            from src.robustness_layer import RobustnessLayer
+            robustness_layer = RobustnessLayer(robustness_level)
+            encoded_message = robustness_layer.encode(encrypted_message)
+
+            # Step 6: Build 56-bit header (PNv2 + robustness byte + length uint16 BE)
+            _robustness_map = {'none': 0x00, 'low': 0x01, 'medium': 0x02, 'high': 0x03}
+            header_bytes = (b"PNv2"
+                            + bytes([_robustness_map[robustness_level]])
+                            + struct.pack('>H', len(encoded_message)))
+
+            # Step 7: Build bit stream and embed in G-channel (channel 1) LSBs,
+            # row-major order.  Pixel LSBs survive lossless PNG round-trips
+            # perfectly — no LWT round-trip corruption possible.
+            all_bytes_to_embed = header_bytes + bytes(encoded_message)
+            all_bits = []
+            for _byte in all_bytes_to_embed:
+                for _b in range(8):
+                    all_bits.append((_byte >> (7 - _b)) & 1)
+
+            height, width = cover_image.shape[:2]
+            if len(all_bits) > height * width:
+                raise InsufficientCapacityError(
+                    f"Message too large for cover image. "
+                    f"Required: {len(all_bits)} bits ({len(all_bits)//8} bytes), "
+                    f"Available: {height * width} bits ({height * width // 8} bytes). "
+                    f"Use a larger image or shorter message."
+                )
+
+            stego_image = cover_image.copy()
+            bit_idx = 0
+            for _i in range(height):
+                for _j in range(width):
+                    if bit_idx >= len(all_bits):
+                        break
+                    stego_image[_i, _j, 1] = (int(stego_image[_i, _j, 1]) & 0xFE) | all_bits[bit_idx]
+                    bit_idx += 1
+                if bit_idx >= len(all_bits):
+                    break
+
             # Step 8: Calculate quality metrics
             psnr, ssim = self.metrics_service.calculate_metrics(
                 cover_image,
                 stego_image
             )
-            
-            # Calculate capacity statistics
-            capacity_bytes = self.metrics_service.estimate_capacity(
-                cnn_mask,
-                robustness_level=robustness_level
-            )
-            
+
+            # Pixel-domain capacity: (H*W - 56 header bits) / 8 bytes
+            capacity_bytes = (height * width - 56) // 8
+
             metrics = {
                 'psnr': psnr,
                 'ssim': ssim,

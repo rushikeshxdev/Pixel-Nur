@@ -284,7 +284,12 @@ class CNNModule:
             interpolation=cv2.INTER_LINEAR
         )
         threshold_value = np.percentile(magnitude_resized, threshold * 100)
-        binary_mask = (magnitude_resized > threshold_value).astype(np.float32)
+        # Use >= to ensure pixels at the threshold boundary are included.
+        # If threshold_value==0 (flat image), fall back to selecting all pixels.
+        if threshold_value == 0:
+            binary_mask = np.ones((target_height, target_width), dtype=np.float32)
+        else:
+            binary_mask = (magnitude_resized >= threshold_value).astype(np.float32)
         return binary_mask
 
     def generate_mask(
