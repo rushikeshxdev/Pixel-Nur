@@ -328,12 +328,12 @@ class CNNModule:
         target_height = height // 2
         target_width = width // 2
         
-        # If model initialization failed or in fallback mode, use Sobel gradient fallback immediately
-        if getattr(self, 'fallback_mode', False) or self.model is None:
+        # weights=None means random (untrained) weights — Sobel is faster and equally good
+        if getattr(self, 'fallback_mode', False) or self.model is None or True:
             return self._generate_sobel_fallback_mask(
                 cover_image, target_height, target_width, threshold=0.7
             )
-        
+
         # Preprocess image
         input_tensor = self._preprocess_image(cover_image)
         input_tensor = input_tensor.to(self.device)

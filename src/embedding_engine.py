@@ -619,28 +619,34 @@ class EmbeddingEngine:
                 f"Encoded size: {len(encoded_message)} bytes (robustness: {robustness_level})"
             )
         
-        # Step 5: Embed message bits using priority queue
-        # No skip count is needed since the header blocks are already excluded in the queue
+        # Step 5: Pre-compute strength maps once per subband (not per bit)
+        strength_maps = {
+            name: self.calculate_adaptive_strength(coeffs, name)
+            for name, coeffs in modified_coeffs.items()
+            if name in self.perceptual_weights
+        }
+
+        # Embed message bits using priority queue
         bit_idx = 0
-        
+
         while bit_idx < len(message_bits) and priority_queue:
             # Pop highest priority location
             neg_priority, subband_name, row, col = heapq.heappop(priority_queue)
-            
-            # Get coefficient and calculate adaptive strength
+
+            # Get coefficient and pre-computed strength
             coeffs = modified_coeffs[subband_name]
             coefficient = coeffs[row, col]
-            strength = self.calculate_adaptive_strength(coeffs, subband_name)[row, col]
-            
+            strength = strength_maps[subband_name][row, col]
+
             # Embed bit using LSB matching
             bit = message_bits[bit_idx]
             modified_coeffs[subband_name][row, col] = self._lsb_match(
                 coefficient, bit, strength
             )
-            
+
             # Record message expected bit for spatial post-correction
             LWTTransform.GLOBAL_EXPECTED_BITS[(subband_name, row, col)] = bit
-            
+
             bit_idx += 1
         
         if bit_idx < len(message_bits):
