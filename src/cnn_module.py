@@ -124,8 +124,8 @@ class CNNModule:
             
         Requirements: 1.1 (texture analysis for mask generation)
         """
-        # Load pretrained ResNet-18
-        resnet18 = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
+        # Load pretrained ResNet-18 (weights=None avoids network download on startup)
+        resnet18 = models.resnet18(weights=None)
         
         # Remove the classification layer (fc) and avgpool
         # We want to keep the feature maps for spatial mask generation
