@@ -8,29 +8,47 @@ an intuitive tabbed interface.
 Requirements: 2.1, 2.2, 3.5, 3.6
 """
 
-import gradio as gr
-import numpy as np
-import cv2
-import torch
 import logging
 import sys
 import os
 import tempfile
 from typing import Tuple, Optional
 
-# Import Phase 2 modules
-from src.pixelnur import PixelNur, PixelNurError, InsufficientCapacityError
-from src.extraction_engine import ExtractionEngine, ExtractionError
-from src.lwt_transform import LWTTransform
-from src.encryption_service import EncryptionService
-
-# Configure logging
+# Configure logging FIRST so all errors are visible in container logs
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[logging.StreamHandler(sys.stdout)]
 )
 logger = logging.getLogger('pixelnur-gradio')
+
+print("=== PixelNur starting up ===", flush=True)
+
+import gradio as gr
+import numpy as np
+import cv2
+import torch
+
+print(f"numpy={np.__version__}, torch={torch.__version__}", flush=True)
+
+# Import Phase 2 modules
+try:
+    from src.pixelnur import PixelNur, PixelNurError, InsufficientCapacityError
+    print("src.pixelnur imported OK", flush=True)
+except Exception as e:
+    print(f"IMPORT ERROR src.pixelnur: {e}", flush=True)
+    raise
+
+try:
+    from src.extraction_engine import ExtractionEngine, ExtractionError
+    print("src.extraction_engine imported OK", flush=True)
+except Exception as e:
+    print(f"IMPORT ERROR src.extraction_engine: {e}", flush=True)
+    raise
+
+from src.lwt_transform import LWTTransform
+from src.encryption_service import EncryptionService
+print("All imports successful", flush=True)
 
 # Constants
 ROBUSTNESS_LEVELS = {
