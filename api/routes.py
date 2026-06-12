@@ -1,44 +1,17 @@
-"""
-PixelNur — Flask backend
-Run: python server.py   |   open http://localhost:7861
-"""
-
-import sys
 import os
 import io
 import base64
-import warnings
-warnings.filterwarnings("ignore")
-
 import requests as http
-from flask import Flask, request, jsonify, render_template
+from flask import Blueprint, request, jsonify
 from PIL import Image
-from dotenv import load_dotenv
+from core.steganography import embed, extract
 
-load_dotenv()
+api_bp = Blueprint("api", __name__)
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
-from simple_steg import embed, extract
-
-app = Flask(__name__, template_folder="templates")
-app.config["MAX_CONTENT_LENGTH"] = 32 * 1024 * 1024  # 32 MB
-
-# ── Pixabay API key ─────────────────────────────────────────────────────────────
-# Get your free key at https://pixabay.com/api/docs/
-# Then put it in pixelNur/.env  →  PIXABAY_API_KEY=your_key_here
 PIXABAY_API_KEY = os.getenv("PIXABAY_API_KEY", "")
-
 _PIXABAY_URL = "https://pixabay.com/api/"
 
-
-# ── Routes ─────────────────────────────────────────────────────────────────────
-
-@app.route("/")
-def index():
-    return render_template("index.html")
-
-
-@app.route("/api/embed", methods=["POST"])
+@api_bp.route("/embed", methods=["POST"])
 def api_embed():
     try:
         if "image" not in request.files:
@@ -74,8 +47,7 @@ def api_embed():
     except Exception as e:
         return jsonify({"error": f"Unexpected error: {e}"}), 500
 
-
-@app.route("/api/extract", methods=["POST"])
+@api_bp.route("/extract", methods=["POST"])
 def api_extract():
     try:
         if "image" not in request.files:
@@ -97,8 +69,7 @@ def api_extract():
     except Exception as e:
         return jsonify({"error": f"Unexpected error: {e}"}), 500
 
-
-@app.route("/api/search-images")
+@api_bp.route("/search-images")
 def search_images():
     q = request.args.get("q", "").strip()
     if not q:
@@ -132,8 +103,7 @@ def search_images():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
-@app.route("/api/fetch-image")
+@api_bp.route("/fetch-image")
 def fetch_image():
     """Proxy an external image URL to avoid CORS issues in the browser."""
     url = request.args.get("url", "")
@@ -146,8 +116,3 @@ def fetch_image():
         return jsonify({"image": f"data:{ct};base64,{img_b64}"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
-if __name__ == "__main__":
-    print("\n  PixelNur running at  http://localhost:7861\n")
-    app.run(host="0.0.0.0", port=7861, debug=False)

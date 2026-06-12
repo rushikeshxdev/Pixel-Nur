@@ -1,25 +1,14 @@
-"""
-Simple, reliable LSB steganography with AES-256-GCM encryption.
-Packet format: MAGIC(4) | BPC(1) | MSG_LEN(4) | SALT(16) | NONCE(16) | CIPHERTEXT | TAG(16)
-"""
-
-import os
 import struct
 import numpy as np
 from PIL import Image
-from Crypto.Cipher import AES
-from Crypto.Protocol.KDF import PBKDF2
-from Crypto.Random import get_random_bytes
-from Crypto.Hash import SHA256
+from core.crypto_utils import encrypt_message, decrypt_message
 
 MAGIC = b'SNUR'
+HEADER_SIZE = 9  # MAGIC(4) + BPC(1) + MSG_LEN(4)
 SALT_SIZE = 16
 NONCE_SIZE = 16
 TAG_SIZE = 16
-HEADER_SIZE = 9  # MAGIC(4) + BPC(1) + MSG_LEN(4)
-ITERATIONS = 100_000
 
-# bits-per-channel for each robustness level
 ROBUSTNESS_BPC = {
     "None":   1,
     "Low":    1,
@@ -27,50 +16,14 @@ ROBUSTNESS_BPC = {
     "High":   2,
 }
 
-
-def _derive_key(password: str, salt: bytes) -> bytes:
-    return PBKDF2(
-        password.encode("utf-8"),
-        salt,
-        dkLen=32,
-        count=ITERATIONS,
-        hmac_hash_module=SHA256,
-    )
-
-
-def _encrypt(message: str, password: str) -> bytes:
-    salt = get_random_bytes(SALT_SIZE)
-    nonce = get_random_bytes(NONCE_SIZE)
-    key = _derive_key(password, salt)
-    cipher = AES.new(key, AES.MODE_GCM, nonce=nonce, mac_len=TAG_SIZE)
-    ciphertext, tag = cipher.encrypt_and_digest(message.encode("utf-8"))
-    return salt + nonce + ciphertext + tag
-
-
-def _decrypt(data: bytes, password: str) -> str:
-    if len(data) < SALT_SIZE + NONCE_SIZE + TAG_SIZE:
-        raise ValueError("Encrypted data too short — likely wrong image or password.")
-    salt = data[:SALT_SIZE]
-    nonce = data[SALT_SIZE:SALT_SIZE + NONCE_SIZE]
-    tag = data[-TAG_SIZE:]
-    ciphertext = data[SALT_SIZE + NONCE_SIZE:-TAG_SIZE]
-    key = _derive_key(password, salt)
-    cipher = AES.new(key, AES.MODE_GCM, nonce=nonce, mac_len=TAG_SIZE)
-    try:
-        return cipher.decrypt_and_verify(ciphertext, tag).decode("utf-8")
-    except (ValueError, KeyError):
-        raise ValueError("Wrong password or corrupted stego image.")
-
-
-def _bytes_to_bits(data: bytes) -> list:
+def bytes_to_bits(data: bytes) -> list:
     bits = []
     for byte in data:
         for i in range(7, -1, -1):
             bits.append((byte >> i) & 1)
     return bits
 
-
-def _bits_to_bytes(bits: list) -> bytes:
+def bits_to_bytes(bits: list) -> bytes:
     result = bytearray()
     for i in range(0, len(bits) - 7, 8):
         val = 0
@@ -79,20 +32,14 @@ def _bits_to_bytes(bits: list) -> bytes:
         result.append(val)
     return bytes(result)
 
-
 def embed(image: Image.Image, message: str, password: str, robustness: str = "None"):
-    """
-    Embed an encrypted message into a cover image using LSB substitution.
-    Returns (stego_image: PIL.Image, metrics: dict).
-    Always save the returned image as PNG to preserve LSBs.
-    """
-    bpc = ROBUSTNESS_BPC[robustness]
+    bpc = ROBUSTNESS_BPC.get(robustness, 1)
 
-    encrypted = _encrypt(message, password)
+    encrypted = encrypt_message(message, password)
 
     # Packet: MAGIC | BPC byte | 4-byte big-endian length | encrypted payload
     packet = MAGIC + bytes([bpc]) + struct.pack(">I", len(encrypted)) + encrypted
-    bits = _bytes_to_bits(packet)
+    bits = bytes_to_bits(packet)
 
     img = image.convert("RGB")
     img_array = np.array(img, dtype=np.uint8)
@@ -109,7 +56,7 @@ def embed(image: Image.Image, message: str, password: str, robustness: str = "No
             f"Try a larger image or a shorter message."
         )
 
-    lsb_mask = 0xFF ^ ((1 << bpc) - 1)  # e.g. bpc=1 → 0xFE, bpc=2 → 0xFC
+    lsb_mask = 0xFF ^ ((1 << bpc) - 1)
 
     bit_idx = 0
     for i in range(len(flat)):
@@ -147,22 +94,16 @@ def embed(image: Image.Image, message: str, password: str, robustness: str = "No
 
     return stego, metrics
 
-
 def extract(image: Image.Image, password: str) -> str:
-    """
-    Extract and decrypt a hidden message from a stego image.
-    Automatically detects bits-per-channel from the embedded header.
-    """
     img_array = np.array(image.convert("RGB"), dtype=np.uint8)
     flat = img_array.flatten()
 
     for bpc in [1, 2]:
         try:
-            result = _try_extract(flat, password, bpc)
+            result = try_extract(flat, password, bpc)
             if result is not None:
                 return result
         except ValueError as e:
-            # Wrong password or bad magic — re-raise only on the last attempt
             if bpc == 2:
                 raise e
         except Exception:
@@ -170,8 +111,7 @@ def extract(image: Image.Image, password: str) -> str:
 
     raise ValueError("Could not extract a message. Check the image and password.")
 
-
-def _try_extract(flat: np.ndarray, password: str, bpc: int) -> str:
+def try_extract(flat: np.ndarray, password: str, bpc: int) -> str:
     lsb_mask = (1 << bpc) - 1
 
     def read_bits(n_bytes):
@@ -184,12 +124,11 @@ def _try_extract(flat: np.ndarray, password: str, bpc: int) -> str:
                 bits.append((val >> b) & 1)
         return bits[:n_bits]
 
-    # Read and validate header
     header_bits = read_bits(HEADER_SIZE)
     if len(header_bits) < HEADER_SIZE * 8:
         return None
 
-    header_bytes = _bits_to_bytes(header_bits)
+    header_bytes = bits_to_bytes(header_bits)
     if header_bytes[:4] != MAGIC:
         return None
 
@@ -201,7 +140,6 @@ def _try_extract(flat: np.ndarray, password: str, bpc: int) -> str:
     if msg_len == 0 or msg_len > 10 * 1024 * 1024:
         return None
 
-    # Read full payload
     total_bytes = HEADER_SIZE + msg_len
     total_channels = (total_bytes * 8 + bpc - 1) // bpc
     if total_channels > len(flat):
@@ -214,6 +152,6 @@ def _try_extract(flat: np.ndarray, password: str, bpc: int) -> str:
             all_bits.append((val >> b) & 1)
 
     payload_bits = all_bits[HEADER_SIZE * 8: HEADER_SIZE * 8 + msg_len * 8]
-    encrypted = _bits_to_bytes(payload_bits)
+    encrypted = bits_to_bytes(payload_bits)
 
-    return _decrypt(encrypted, password)
+    return decrypt_message(encrypted, password)
